@@ -2,6 +2,19 @@
 
 exports.for = function(API, plugin) {
 
+    plugin.resolveLocator = function(locator, options) {
+        var self = this;
+
+        locator.getLocation = function(type) {
+            var locations = {
+                "status": "https://registry.npmjs.org/" + this.id
+            };
+            return (type)?locations[type]:locations;
+        }
+
+        return self.API.Q.resolve(locator);
+    }
+
 	plugin.status = function(options) {
 		if (!plugin.node.exists || !plugin.node.descriptors.package) return API.Q.resolve(false);
 		var status = {};
@@ -20,16 +33,16 @@ exports.for = function(API, plugin) {
         var self = this;
         if (
             !self.node.name ||
-            (self.node.descriptors.package && self.node.descriptors.package.private === true)
+            !self.node.summary.declaredLocator ||
+            self.node.summary.declaredLocator.descriptor.pm !== "npm"
         ) return API.Q.resolve(false);
-        if (!(
-            (self.node.descriptors.locator && self.node.descriptors.locator.pm === "npm") ||
-            (self.node.descriptors.package && self.node.descriptors.package.pm === "npm")
-        )) return API.Q.resolve(false);
+
+        var uri = self.node.summary.declaredLocator.getLocation("status");
+        if (!uri) return API.Q.resolve(false);
+
         var opts = API.UTIL.copy(options);
         opts.loadBody = true;
         opts.ttl = API.HELPERS.ttlForOptions(options);
-        var uri = "https://registry.npmjs.org/" + self.node.name;
         function fetch(options) {
             return self.fetchExternalUri(uri, options).then(function(response) {
                 var summary = {};
@@ -37,6 +50,8 @@ exports.for = function(API, plugin) {
                     summary.published = true;
                     summary.descriptor = JSON.parse(response.body.toString());
                     summary.version = summary.descriptor["dist-tags"].latest
+                    // TODO: Populate only with relevant data (according to PINF standard).
+                    summary.versions = summary.descriptor.versions || {};
     /*
                     var versionSelector = options.versionSelector;
                     summary.published = true;
@@ -78,7 +93,9 @@ exports.for = function(API, plugin) {
             if (
                 self.node.exists &&
                 response[0].status === 304 &&
-                API.SEMVER.compare(self.node.descriptors.package.version, response[1].version) > 0
+                self.node.summary.actualLocator &&
+                self.node.summary.actualLocator.version &&
+                API.SEMVER.compare(self.node.summary.actualLocator.version, response[1].version) > 0
             ) {
                 opts.ttl = API.HELPERS.ttlForOptions(options, "today");
                 return fetch(opts).then(function(response) {
