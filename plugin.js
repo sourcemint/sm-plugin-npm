@@ -120,6 +120,24 @@ exports.for = function(API, plugin) {
     }
 
 
+    plugin.test = function(node, options) {
+        if (!node.descriptors.package.scripts || !node.descriptors.package.scripts.test) {
+            API.TERM.stdout.writenl("\0yellow(No `scripts.test` property found in package descriptor for package '" + node.path + "'.\0)");
+            return API.Q.resolve();
+        }
+        var args = [
+            "test",
+        ];
+        if (options.cover) {
+            args.push("--cover");
+            // TODO: Call test differently to enable test coverage via istanbul even if package
+            //       does not support test coverage out of the box. This will work if test script points
+            //       to a JS file.
+        }
+        return callNPM(node.path, args, options);
+    }
+
+
     function callNPM(basePath, args, options) {
 
         options = options || {};
