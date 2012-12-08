@@ -13,6 +13,10 @@ exports.for = function(API, plugin) {
             var locations = {
                 "status": "https://registry.npmjs.org/" + this.id
             };
+            if (this.version) {
+                locations.tar = "http://registry.npmjs.org/" + this.id + "/-/" + this.id + "-" + this.version + ".tgz";
+                locations.pointer = locations.tar;
+            }
             return (type)?locations[type]:locations;
         }
 
