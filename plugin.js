@@ -9,6 +9,20 @@ exports.for = function(API, plugin) {
     plugin.resolveLocator = function(locator, options) {
         var self = this;
 
+        if (!locator.version && !locator.selector && locator.descriptor.pointer) {
+            var m;
+            if((m = locator.descriptor.pointer.match(/registry.npmjs.org\/([^\/]*)\/-\/(.*)$/))) {
+                locator.pm = "npm";
+                locator.vendor = "npm";
+                locator.id = m[1];
+                if (m[2].substring(0, m[1].length+1) === (m[1] + "-")) {
+                    if((m = m[2].substring(m[1].length+1).match(/^(.*)\.tgz$/))) {
+                        locator.version = m[1];
+                    }
+                }
+            }
+        }
+
         locator.getLocation = function(type) {
             var locations = {
                 "status": "https://registry.npmjs.org/" + this.id
