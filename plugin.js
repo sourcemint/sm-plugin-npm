@@ -137,6 +137,18 @@ exports.for = function(API, plugin) {
         return callNPM(packagePath, args, options);
     }
 
+    plugin.publish = function(options) {
+        var self = this;
+        var opts = API.UTIL.copy(options);
+        opts.cwd = self.node.path;
+        var args = [
+            "publish"
+        ];
+        if (self.node.summary.versionStream) {
+            args.push("--tag", self.node.summary.versionStream);
+        }
+        return API.OS.spawnInline("npm", args, opts);
+    }
 
     plugin.test = function(node, options) {
         if (!node.descriptors.package.scripts || !node.descriptors.package.scripts.test) {
