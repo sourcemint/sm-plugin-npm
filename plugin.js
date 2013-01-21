@@ -25,7 +25,9 @@ exports.for = function(API, plugin) {
 
         locator.getLocation = function(type) {
             var locations = {
-                "status": "https://registry.npmjs.org/" + this.id
+                "status": "https://registry.npmjs.org/" + this.id,
+                // Without reading the descriptor this is as close as we can get to the homepage.
+                "homepage": "https://registry.npmjs.org/" + this.id
             };
             if (this.version) {
                 locations.tar = "http://registry.npmjs.org/" + this.id + "/-/" + this.id + "-" + this.version + ".tgz";
