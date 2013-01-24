@@ -153,7 +153,7 @@ exports.for = function(API, plugin) {
     }
 
     plugin.test = function(node, options) {
-        if (!node.descriptors.package.scripts || !node.descriptors.package.scripts.test) {
+        if (!node.descriptor.package.scripts || !node.descriptor.package.scripts.test) {
             API.TERM.stdout.writenl("\0yellow(No `scripts.test` property found in package descriptor for package '" + node.path + "'.\0)");
             return API.Q.resolve();
         }
