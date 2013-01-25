@@ -67,8 +67,9 @@ exports.for = function(API, plugin) {
         var opts = API.UTIL.copy(options);
         opts.loadBody = true;
         opts.ttl = API.HELPERS.ttlForOptions(options);
-        function fetch(options) {
-            return self.fetchExternalUri(uri, options).then(function(response) {
+        function fetch(options, callback) {
+            return self.fetchExternalUri(uri, options, function(err, response) {
+                if (err) return callback(err);
                 var summary = {};
                 if (response.status === 200 || response.status === 304) {
                     summary.published = true;
@@ -106,12 +107,15 @@ exports.for = function(API, plugin) {
                 if (response.status === 404) {
                     summary.published = false;
                 } else {
-                    throw new Error("Got response status '" + response.status + "' for '" + uri + "'!");
+                    return callback(new Error("Got response status '" + response.status + "' for '" + uri + "'!"));
                 }
-                return [response, summary];
+                return callback(null, [response, summary]);
             });
         }
-        return fetch(opts).then(function(response) {
+
+        var deferred = API.Q.defer();
+        fetch(opts, function(err, response) {
+            if (err) return deferred.reject(err);
             // If installed version is newer than latest, re-fetch with today as TTL.
             // TODO: Verify that this works!
             if (
@@ -122,12 +126,14 @@ exports.for = function(API, plugin) {
                 API.SEMVER.compare(self.node.summary.actualLocator.version, response[1].version) > 0
             ) {
                 opts.ttl = API.HELPERS.ttlForOptions(options, "today");
-                return fetch(opts).then(function(response) {
-                    return response[1];
+                return fetch(opts, function(err, response) {
+                    if (err) return deferred.reject(err);
+                    return deferred.resolve(response[1]);
                 });
             }
-            return response[1];
+            return deferred.resolve(response[1]);
         });
+        return deferred.promise;
 	}
 
     plugin.install = function(packagePath, options) {
