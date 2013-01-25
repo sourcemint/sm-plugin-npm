@@ -39,8 +39,8 @@ exports.for = function(API, plugin) {
         return callback(null, locator);
     }
 
-	plugin.status = function(options) {
-		if (!plugin.node.exists || !plugin.node.descriptors.package) return API.Q.resolve(false);
+	plugin.status = function(options, callback) {
+		if (!plugin.node.exists || !plugin.node.descriptors.package) return callback(null, false);
 		var status = {};
         // Contains `<name>@<version>` of installed.
         if (typeof plugin.node.descriptors.package._id !== "undefined") {
@@ -50,7 +50,7 @@ exports.for = function(API, plugin) {
         if (typeof plugin.node.descriptors.package._from !== "undefined") {
         	status.pointer = plugin.node.descriptors.package._from.replace(/^[^@]*@/,"");
         }
-        return API.Q.resolve(status);
+        return callback(null, status);
 	}
 
 	plugin.latest = function(options, callback) {
