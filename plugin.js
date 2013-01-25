@@ -6,7 +6,7 @@ const SPAWN = require("child_process").spawn;
 
 exports.for = function(API, plugin) {
 
-    plugin.resolveLocator = function(locator, options) {
+    plugin.resolveLocator = function(locator, options, callback) {
         var self = this;
 
         if (!locator.version && !locator.selector && locator.descriptor.pointer) {
@@ -36,7 +36,7 @@ exports.for = function(API, plugin) {
             return (type)?locations[type]:locations;
         }
 
-        return self.API.Q.resolve(locator);
+        return callback(null, locator);
     }
 
 	plugin.status = function(options) {
