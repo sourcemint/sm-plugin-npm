@@ -53,16 +53,16 @@ exports.for = function(API, plugin) {
         return API.Q.resolve(status);
 	}
 
-	plugin.latest = function(options) {
+	plugin.latest = function(options, callback) {
         var self = this;
         if (
             !self.node.name ||
             !self.node.summary.declaredLocator ||
             self.node.summary.declaredLocator.descriptor.pm !== "npm"
-        ) return API.Q.resolve(false);
+        ) return callback(null, false);
 
         var uri = self.node.summary.declaredLocator.getLocation("status");
-        if (!uri) return API.Q.resolve(false);
+        if (!uri) return callback(null, false);
 
         var opts = API.UTIL.copy(options);
         opts.loadBody = true;
@@ -113,9 +113,8 @@ exports.for = function(API, plugin) {
             });
         }
 
-        var deferred = API.Q.defer();
-        fetch(opts, function(err, response) {
-            if (err) return deferred.reject(err);
+        return fetch(opts, function(err, response) {
+            if (err) return callback(err);
             // If installed version is newer than latest, re-fetch with today as TTL.
             // TODO: Verify that this works!
             if (
@@ -127,13 +126,12 @@ exports.for = function(API, plugin) {
             ) {
                 opts.ttl = API.HELPERS.ttlForOptions(options, "today");
                 return fetch(opts, function(err, response) {
-                    if (err) return deferred.reject(err);
-                    return deferred.resolve(response[1]);
+                    if (err) return callback(err);
+                    return callback(null, response[1]);
                 });
             }
-            return deferred.resolve(response[1]);
+            return callback(null, response[1]);
         });
-        return deferred.promise;
 	}
 
     plugin.install = function(packagePath, options) {
