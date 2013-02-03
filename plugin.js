@@ -11,6 +11,12 @@ exports.for = function(API, plugin) {
 
         if (!locator.version && !locator.selector && locator.descriptor.pointer) {
             var m;
+            if((m = locator.descriptor.pointer.match(/^([^@]*)@(.*)$/))) {
+                locator.pm = "npm";
+                locator.vendor = "npm";
+                locator.id = m[1];
+                locator.selector = m[2];
+            } else
             if((m = locator.descriptor.pointer.match(/registry.npmjs.org\/([^\/]*)\/-\/(.*)$/))) {
                 locator.pm = "npm";
                 locator.vendor = "npm";
@@ -30,8 +36,8 @@ exports.for = function(API, plugin) {
                 "homepage": "https://registry.npmjs.org/" + this.id
             };
             if (this.version) {
-                locations.tar = "http://registry.npmjs.org/" + this.id + "/-/" + this.id + "-" + this.version + ".tgz";
-                locations.pointer = locations.tar;
+                locations.gzip = "http://registry.npmjs.org/" + this.id + "/-/" + this.id + "-" + this.version + ".tgz";
+                locations.pointer = locations.gzip;
             }
             return (type)?locations[type]:locations;
         }
