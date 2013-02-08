@@ -81,8 +81,8 @@ exports.for = function(API, plugin) {
                     summary.published = true;
                     summary.descriptor = JSON.parse(response.body.toString());
                     summary.version = summary.descriptor["dist-tags"].latest
-                    // TODO: Populate only with relevant data (according to PINF standard).
                     summary.versions = summary.descriptor.versions || {};
+
     /*
                     var versionSelector = options.versionSelector;
                     summary.published = true;
@@ -123,6 +123,7 @@ exports.for = function(API, plugin) {
             if (err) return callback(err);
             // If installed version is newer than latest, re-fetch with today as TTL.
             // TODO: Verify that this works!
+            // TODO: Move this into sm core so it applies to all pms.
             if (
                 self.node.exists &&
                 response[0].status === 304 &&
