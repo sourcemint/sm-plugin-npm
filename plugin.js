@@ -36,8 +36,9 @@ exports.for = function(API, plugin) {
                 "homepage": "https://registry.npmjs.org/" + this.id
             };
             if (this.version) {
+                locations.pointer = "http://registry.npmjs.org/" + this.id;
                 locations.gzip = "http://registry.npmjs.org/" + this.id + "/-/" + this.id + "-" + this.version + ".tgz";
-                locations.pointer = locations.gzip;
+                locations.archive = locations.gzip;
             }
             return (type)?locations[type]:locations;
         }
@@ -61,14 +62,18 @@ exports.for = function(API, plugin) {
 
 	plugin.latest = function(options, callback) {
         var self = this;
+
         if (
             !self.node.name ||
-            !self.node.summary.declaredLocator ||
-            self.node.summary.declaredLocator.descriptor.pm !== "npm"
+            (
+                self.node.summary.pm.locator !== "npm" &&
+                self.node.summary.pm.install !== "npm" &&
+                self.node.summary.pm.publish !== "npm"
+            )
         ) return callback(null, false);
 
-        var uri = self.node.summary.declaredLocator.getLocation("status");
-        if (!uri) return callback(null, false);
+        var uri = "https://registry.npmjs.org/" + self.node.name; //self.node.summary.declaredLocator.getLocation("status");
+//        if (!uri) return callback(null, false);
 
         var opts = API.UTIL.copy(options);
         opts.loadBody = true;
@@ -152,15 +157,33 @@ exports.for = function(API, plugin) {
 
     plugin.publish = function(options) {
         var self = this;
+        var deferred = API.Q.defer();
         var opts = API.UTIL.copy(options);
-        opts.cwd = self.node.path;
-        var args = [
-            "publish"
-        ];
-        if (self.node.summary.versionStream) {
-            args.push("--tag", self.node.summary.versionStream);
-        }
-        return API.OS.spawnInline("npm", args, opts);
+        opts.now = true;
+        // TODO: Rather than fetching whole status here check of 404 on package info URI.
+        plugin.latest(opts, function(err, latest) {
+            if (err) return deferred.reject(err);
+            if (
+                latest && (
+                    plugin.node.summary.version === latest.version ||
+                    latest.versions[plugin.node.summary.version]
+                )
+            ) {
+                // Package already published.
+                API.TERM.stdout.writenl("\0yellow(Version '" + plugin.node.summary.version + "' already published.\0)");
+                return deferred.resolve();
+            }
+            var opts = API.UTIL.copy(options);
+            opts.cwd = self.node.path;
+            var args = [
+                "publish"
+            ];
+            if (self.node.summary.versionStream) {
+                args.push("--tag", self.node.summary.versionStream);
+            }
+            return API.OS.spawnInline("npm", args, opts).then(deferred.resolve, deferred.reject);
+        });
+        return deferred.promise;
     }
 
     plugin.test = function(node, options) {
