@@ -191,6 +191,8 @@ exports.for = function(API, plugin) {
             API.TERM.stdout.writenl("\0yellow(No `scripts.test` property found in package descriptor for package '" + node.path + "'.\0)");
             return API.Q.resolve();
         }
+        var opts = API.UTIL.copy(options);
+        opts.verbose = true;
         var args = [
             "test",
         ];
@@ -200,7 +202,7 @@ exports.for = function(API, plugin) {
             //       does not support test coverage out of the box. This will work if test script points
             //       to a JS file.
         }
-        return callNPM(node.path, args, options);
+        return callNPM(node.path, args, opts);
     }
 
 
